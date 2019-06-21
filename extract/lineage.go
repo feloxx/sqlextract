@@ -17,10 +17,14 @@ func (v *LineageVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	case *ast.CreateTableStmt:
 		v.OutputTableList = append(v.OutputTableList, n.Table.Text())
 	case *ast.SelectStmt:
-		v.traverseJoin(n.From.TableRefs)
+		if n.From != nil {
+			v.traverseJoin(n.From.TableRefs)
+		}
 	case *ast.UnionStmt:
 		for _, uni := range n.SelectList.Selects {
-			v.traverseJoin(uni.From.TableRefs)
+			if uni.From != nil {
+				v.traverseJoin(uni.From.TableRefs)
+			}
 		}
 	case *ast.InsertStmt:
 		_ = n.Table.TableRefs.Restore(NewRestoreCtx(DefaultRestoreFlags, &v.sb))
@@ -29,10 +33,14 @@ func (v *LineageVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 		if n.Select != nil {
 			switch sel := n.Select.(type) {
 			case *ast.SelectStmt:
-				v.traverseJoin(sel.From.TableRefs)
+				if sel.From != nil {
+					v.traverseJoin(sel.From.TableRefs)
+				}
 			case *ast.UnionStmt:
 				for _, uni := range sel.SelectList.Selects {
-					v.traverseJoin(uni.From.TableRefs)
+					if uni.From != nil {
+						v.traverseJoin(uni.From.TableRefs)
+					}
 				}
 			}
 		}
@@ -50,7 +58,9 @@ func (v *LineageVisitor) traverseJoin(n *ast.Join) {
 		r := n.Right.(*ast.TableSource)
 		switch sel := r.Source.(type) {
 		case *ast.SelectStmt: //右节点是个子查询
-			v.traverseJoin(sel.From.TableRefs)
+			if sel.From != nil {
+				v.traverseJoin(sel.From.TableRefs)
+			}
 		default: //右节点是个表
 			_ = r.Source.Restore(NewRestoreCtx(DefaultRestoreFlags, &v.sb))
 			dbTable := strings.Split(v.sb.String(), ".")
@@ -86,4 +96,16 @@ func (v *LineageVisitor) traverseJoin(n *ast.Join) {
 	case *ast.Join:
 		v.traverseJoin(n.Left.(*ast.Join))
 	}
+}
+
+func (v *LineageVisitor) Parser(sql string) ([]string, []string) {
+	stmts, _, _ := p.Parse(sql, "", "")
+	for _, stmt := range stmts {
+		stmt.Accept(v)
+	}
+	return v.InputTableList, v.OutputTableList
+}
+
+func NewLineage() *LineageVisitor {
+	return &LineageVisitor{}
 }

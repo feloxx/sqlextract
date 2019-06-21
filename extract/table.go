@@ -1,18 +1,10 @@
 package extract
 
 import (
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
-	. "github.com/pingcap/parser/format"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"strings"
 )
-
-var p *parser.Parser
-
-func init() {
-	p = parser.New()
-}
 
 type tableVisitor struct {
 	sb        strings.Builder
@@ -22,8 +14,7 @@ type tableVisitor struct {
 func (v *tableVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	switch n := in.(type) {
 	case *ast.TableName:
-		_ = n.Restore(NewRestoreCtx(DefaultRestoreFlags, &v.sb))
-		v.tableList = append(v.tableList, v.sb.String())
+		v.tableList = append(v.tableList, n.Schema.O+"."+n.Name.O)
 	}
 	return in, false
 }
