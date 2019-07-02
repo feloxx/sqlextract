@@ -31,6 +31,10 @@ func (v *tableVisitor) Parser(sql string) []string {
 	return v.tableList
 }
 
+func (v *tableVisitor) Clear() {
+	v.tableList = []string{}
+}
+
 func NewTable() *tableVisitor {
 	return &tableVisitor{}
 }

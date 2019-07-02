@@ -38,6 +38,10 @@ func (v *DdlVisitor) Parser(sql string) []string {
 	return v.ddlColumns
 }
 
+func (v *DdlVisitor) Clear() {
+	v.ddlColumns = []string{}
+}
+
 func NewDDL() *DdlVisitor {
 	return &DdlVisitor{}
 }

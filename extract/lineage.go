@@ -106,6 +106,11 @@ func (v *LineageVisitor) Parser(sql string) ([]string, []string) {
 	return v.InputTableList, v.OutputTableList
 }
 
+func (v *LineageVisitor) Clear() {
+	v.InputTableList = []string{}
+	v.OutputTableList = []string{}
+}
+
 func NewLineage() *LineageVisitor {
 	return &LineageVisitor{}
 }
